@@ -19,12 +19,13 @@ def conv2d(filter_in, filter_out, kernel_size):
 #------------------------------------------------------------------------#
 def make_last_layers(filters_list, in_filters, out_filter):
     m = nn.Sequential(
-        conv2d(in_filters, filters_list[0], 1),
+        conv2d(in_filters, filters_list[0], 1), # 压缩通道数
+        conv2d(filters_list[0], filters_list[1], 3), # 提取特征
+        conv2d(filters_list[1], filters_list[0], 1), 
         conv2d(filters_list[0], filters_list[1], 3),
         conv2d(filters_list[1], filters_list[0], 1),
-        conv2d(filters_list[0], filters_list[1], 3),
-        conv2d(filters_list[1], filters_list[0], 1),
-        conv2d(filters_list[0], filters_list[1], 3),
+        
+        conv2d(filters_list[0], filters_list[1], 3), # 分类预测和回归预测
         nn.Conv2d(filters_list[1], out_filter, kernel_size=1, stride=1, padding=0, bias=True)
     )
     return m
@@ -39,17 +40,16 @@ class YoloBody(nn.Module):
         #   26,26,512
         #   13,13,1024
         #---------------------------------------------------#
-        self.backbone = darknet53()
+        self.backbone = darknet53() #利用darknet函数，获取darknet结构，保存在backbone里面
         if pretrained:
-            self.backbone.load_state_dict(torch.load("model_data/darknet53_backbone_weights.pth"))
+            self.backbone.load_state_dict(torch.load("logs/best_epoch_weights.pth"))
 
         #---------------------------------------------------#
         #   out_filters : [64, 128, 256, 512, 1024]
         #---------------------------------------------------#
         out_filters = self.backbone.layers_out_filters
-
         #------------------------------------------------------------------------#
-        #   计算yolo_head的输出通道数，对于voc数据集而言
+        #   计算yolo_head的输出通道数，对于voc数据集而言 3*（5+num_classes)=3*(4+1+20)
         #   final_out_filter0 = final_out_filter1 = final_out_filter2 = 75
         #------------------------------------------------------------------------#
         self.last_layer0            = make_last_layers([512, 1024], out_filters[-1], len(anchors_mask[0]) * (num_classes + 5))

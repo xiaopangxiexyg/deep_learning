@@ -138,3 +138,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+mydataset
+
+# 代码自动生成的文件以及测试图片/视频
+2007_train.txt
+2007_val.txt
+img
+img_out
+video
